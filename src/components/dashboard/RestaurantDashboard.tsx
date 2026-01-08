@@ -2,15 +2,15 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Package, Handshake, TrendingUp, Settings } from "lucide-react";
+import { Plus, LogOut, Package, Handshake, TrendingUp } from "lucide-react";
 import AddFoodDialog from "./AddFoodDialog";
 import FoodListingCard from "./FoodListingCard";
 import MatchesSection from "./MatchesSection";
 import ImpactStats from "./ImpactStats";
 import SettingsSection from "./SettingsSection";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Database } from "@/integrations/supabase/types";
 
 type FoodListing = Database["public"]["Tables"]["food_listings"]["Row"];
@@ -88,6 +88,7 @@ const RestaurantDashboard = ({ onSignOut }: RestaurantDashboardProps) => {
           <Button onClick={() => setShowAddDialog(true)} className="gap-2">
             <Plus className="h-4 w-4" /> Add Food
           </Button>
+          <ThemeToggle />
           <Button variant="outline" onClick={onSignOut} className="gap-2">
             <LogOut className="h-4 w-4" /> Sign Out
           </Button>

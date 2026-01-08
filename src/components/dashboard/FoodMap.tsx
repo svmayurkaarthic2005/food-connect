@@ -84,11 +84,14 @@ const FoodMap = ({ ngoName, ngoLatitude, ngoLongitude, restaurants }: FoodMapPro
     const map = mapInstanceRef.current;
     if (!map) return;
 
+    console.log("FoodMap: restaurants data received:", restaurants);
+
     // Create a layer group for restaurant markers
     const restaurantMarkers = L.layerGroup().addTo(map);
 
     // Add restaurant markers
     restaurants.forEach((restaurant) => {
+      console.log("FoodMap: Adding marker for restaurant:", restaurant.name, "at", restaurant.latitude, restaurant.longitude);
       const popupContent = `
         <div>
           <strong>${restaurant.name}</strong>

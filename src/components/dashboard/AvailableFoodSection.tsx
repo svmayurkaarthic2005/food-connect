@@ -146,8 +146,11 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
   const restaurantsForMap = useMemo((): RestaurantMapItem[] => {
     const restaurantMap: Record<string, RestaurantMapItem> = {};
     
+    console.log("AvailableFoodSection: Processing availableFood for map:", availableFood.length, "items");
+    
     availableFood.forEach((food) => {
       const r = food.restaurants;
+      console.log("AvailableFoodSection: Food item restaurant:", r?.name, "lat:", r?.latitude, "lng:", r?.longitude);
       if (r?.latitude && r?.longitude) {
         const existing = restaurantMap[r.id];
         if (existing) {
@@ -157,15 +160,17 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
             id: r.id,
             name: r.name,
             address: r.address,
-            latitude: r.latitude,
-            longitude: r.longitude,
+            latitude: Number(r.latitude),
+            longitude: Number(r.longitude),
             foodCount: 1,
           };
         }
       }
     });
     
-    return Object.values(restaurantMap);
+    const result = Object.values(restaurantMap);
+    console.log("AvailableFoodSection: restaurantsForMap result:", result);
+    return result;
   }, [availableFood]);
 
   if (loading) {

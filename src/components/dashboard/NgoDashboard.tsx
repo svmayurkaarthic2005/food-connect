@@ -4,13 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Package, Users, Heart, Settings } from "lucide-react";
+import { Plus, LogOut, Package, Users, Heart } from "lucide-react";
 import AddRequestDialog from "./AddRequestDialog";
 import FoodRequestCard from "./FoodRequestCard";
 import AvailableFoodSection from "./AvailableFoodSection";
 import NgoMatchesSection from "./NgoMatchesSection";
 import ImpactStats from "./ImpactStats";
 import SettingsSection from "./SettingsSection";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Database } from "@/integrations/supabase/types";
 
 type FoodRequest = Database["public"]["Tables"]["food_requests"]["Row"];
@@ -88,6 +89,7 @@ const NgoDashboard = ({ onSignOut }: NgoDashboardProps) => {
           <Button onClick={() => setShowAddDialog(true)} className="gap-2">
             <Plus className="h-4 w-4" /> Request Food
           </Button>
+          <ThemeToggle />
           <Button variant="outline" onClick={onSignOut} className="gap-2">
             <LogOut className="h-4 w-4" /> Sign Out
           </Button>
