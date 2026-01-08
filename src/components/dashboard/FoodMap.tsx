@@ -1,9 +1,8 @@
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix for default marker icons in react-leaflet
+// Fix for default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
@@ -46,77 +45,82 @@ interface FoodMapProps {
   restaurants: Restaurant[];
 }
 
-// Component to fit bounds when markers change
-const FitBounds = ({ bounds }: { bounds: L.LatLngBoundsExpression }) => {
-  const map = useMap();
+const FoodMap = ({ ngoName, ngoLatitude, ngoLongitude, restaurants }: FoodMapProps) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+
   useEffect(() => {
-    if (bounds) {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    // Initialize the map
+    const map = L.map(mapRef.current).setView([ngoLatitude, ngoLongitude], 12);
+    mapInstanceRef.current = map;
+
+    // Add tile layer
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    }).addTo(map);
+
+    // Add NGO marker
+    L.marker([ngoLatitude, ngoLongitude], { icon: ngoIcon })
+      .addTo(map)
+      .bindPopup(`<div class="text-center"><strong>${ngoName}</strong><br/><span class="text-xs">Your Location (NGO)</span></div>`);
+
+    // Cleanup on unmount
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [ngoLatitude, ngoLongitude, ngoName]);
+
+  // Update markers when restaurants change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    // Create a layer group for restaurant markers
+    const restaurantMarkers = L.layerGroup().addTo(map);
+
+    // Add restaurant markers
+    restaurants.forEach((restaurant) => {
+      const popupContent = `
+        <div>
+          <strong>${restaurant.name}</strong>
+          ${restaurant.address ? `<br/><span class="text-xs">${restaurant.address}</span>` : ""}
+          ${restaurant.foodCount !== undefined ? `<br/><span class="text-xs text-muted-foreground">${restaurant.foodCount} item(s) available</span>` : ""}
+        </div>
+      `;
+      L.marker([restaurant.latitude, restaurant.longitude], { icon: restaurantIcon })
+        .addTo(restaurantMarkers)
+        .bindPopup(popupContent);
+    });
+
+    // Fit bounds if there are restaurants
+    if (restaurants.length > 0) {
+      const allPoints: [number, number][] = [
+        [ngoLatitude, ngoLongitude],
+        ...restaurants.map((r) => [r.latitude, r.longitude] as [number, number]),
+      ];
+      const bounds = L.latLngBounds(allPoints);
       map.fitBounds(bounds, { padding: [50, 50] });
     }
-  }, [map, bounds]);
-  return null;
-};
 
-const FoodMap = ({ ngoName, ngoLatitude, ngoLongitude, restaurants }: FoodMapProps) => {
-  // Calculate bounds to fit all markers
-  const allPoints: [number, number][] = [
-    [ngoLatitude, ngoLongitude],
-    ...restaurants.map((r) => [r.latitude, r.longitude] as [number, number]),
-  ];
-  
-  const bounds = L.latLngBounds(allPoints);
+    // Cleanup markers when restaurants change
+    return () => {
+      restaurantMarkers.clearLayers();
+      map.removeLayer(restaurantMarkers);
+    };
+  }, [restaurants, ngoLatitude, ngoLongitude]);
 
   return (
     <div className="space-y-2">
-      <div className="h-[400px] w-full rounded-lg overflow-hidden border">
-        <MapContainer
-          center={[ngoLatitude, ngoLongitude]}
-          zoom={12}
-          style={{ height: "100%", width: "100%" }}
-          scrollWheelZoom={true}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          
-          {restaurants.length > 0 && <FitBounds bounds={bounds} />}
-          
-          {/* NGO Marker */}
-          <Marker position={[ngoLatitude, ngoLongitude]} icon={ngoIcon}>
-            <Popup>
-              <div className="text-center">
-                <strong className="text-primary">{ngoName}</strong>
-                <p className="text-xs text-muted-foreground">Your Location (NGO)</p>
-              </div>
-            </Popup>
-          </Marker>
-
-          {/* Restaurant Markers */}
-          {restaurants.map((restaurant) => (
-            <Marker
-              key={restaurant.id}
-              position={[restaurant.latitude, restaurant.longitude]}
-              icon={restaurantIcon}
-            >
-              <Popup>
-                <div>
-                  <strong className="text-destructive">{restaurant.name}</strong>
-                  {restaurant.address && (
-                    <p className="text-xs">{restaurant.address}</p>
-                  )}
-                  {restaurant.foodCount !== undefined && (
-                    <p className="text-xs text-muted-foreground">
-                      {restaurant.foodCount} item(s) available
-                    </p>
-                  )}
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-        </MapContainer>
-      </div>
-      
+      <div 
+        ref={mapRef} 
+        className="h-[400px] w-full rounded-lg overflow-hidden border"
+        style={{ zIndex: 0 }}
+      />
       {/* Legend */}
       <div className="flex gap-4 text-sm">
         <div className="flex items-center gap-1">
