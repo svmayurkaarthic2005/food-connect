@@ -155,16 +155,6 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
     );
   }
 
-  if (availableFood.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <p className="text-muted-foreground">No food available within {MAX_DISTANCE_KM}km. Check back later!</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Extract unique restaurants with locations for the map
   type RestaurantMapItem = { id: string; name: string; address?: string | null; latitude: number; longitude: number; foodCount: number };
   
@@ -192,6 +182,42 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
     
     return Object.values(restaurantMap);
   }, [availableFood]);
+
+  if (availableFood.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            No food available within {MAX_DISTANCE_KM}km
+          </p>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowMap(!showMap)}
+            className="gap-2"
+          >
+            <MapIcon className="h-4 w-4" />
+            {showMap ? "Hide Map" : "Show Map"}
+          </Button>
+        </div>
+
+        {showMap && ngoLatitude && ngoLongitude && (
+          <FoodMap
+            ngoName={ngoName}
+            ngoLatitude={ngoLatitude}
+            ngoLongitude={ngoLongitude}
+            restaurants={[]}
+          />
+        )}
+
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground">Check back later for available food!</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
