@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Clock, Scale, Users, Leaf, Drumstick, MapPin } from "lucide-react";
+import { Clock, Scale, Users, Leaf, Drumstick, MapPin, Navigation } from "lucide-react";
 import { toast } from "sonner";
 import { Database } from "@/integrations/supabase/types";
 
@@ -13,14 +13,32 @@ type Restaurant = Database["public"]["Tables"]["restaurants"]["Row"];
 
 interface AvailableFoodSectionProps {
   ngoId: string | undefined;
+  ngoLatitude: number | null;
+  ngoLongitude: number | null;
   onMatchCreated: () => void;
 }
 
 interface FoodWithRestaurant extends FoodListing {
   restaurants: Restaurant;
+  distance?: number;
 }
 
-const AvailableFoodSection = ({ ngoId, onMatchCreated }: AvailableFoodSectionProps) => {
+// Haversine formula to calculate distance between two points
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const MAX_DISTANCE_KM = 15;
+
+const AvailableFoodSection = ({ ngoId, ngoLatitude, ngoLongitude, onMatchCreated }: AvailableFoodSectionProps) => {
   const [availableFood, setAvailableFood] = useState<FoodWithRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +60,7 @@ const AvailableFoodSection = ({ ngoId, onMatchCreated }: AvailableFoodSectionPro
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [ngoLatitude, ngoLongitude]);
 
   const fetchAvailableFood = async () => {
     const { data, error } = await supabase
@@ -53,7 +71,36 @@ const AvailableFoodSection = ({ ngoId, onMatchCreated }: AvailableFoodSectionPro
       .order("expires_at", { ascending: true });
 
     if (!error && data) {
-      setAvailableFood(data as FoodWithRestaurant[]);
+      let foodWithDistance = data as FoodWithRestaurant[];
+      
+      // Filter by distance if NGO has location set
+      if (ngoLatitude && ngoLongitude) {
+        foodWithDistance = foodWithDistance
+          .map(food => {
+            const restLat = food.restaurants?.latitude;
+            const restLng = food.restaurants?.longitude;
+            if (restLat && restLng) {
+              const distance = calculateDistance(ngoLatitude, ngoLongitude, restLat, restLng);
+              return { ...food, distance };
+            }
+            return { ...food, distance: undefined };
+          })
+          .filter(food => {
+            // Include food if restaurant has no location (for backwards compatibility)
+            // or if within 15km
+            if (food.distance === undefined) return true;
+            return food.distance <= MAX_DISTANCE_KM;
+          })
+          .sort((a, b) => {
+            // Sort by distance (closest first), then by expiry
+            if (a.distance !== undefined && b.distance !== undefined) {
+              return a.distance - b.distance;
+            }
+            return 0;
+          });
+      }
+      
+      setAvailableFood(foodWithDistance);
     }
     setLoading(false);
   };
@@ -64,12 +111,13 @@ const AvailableFoodSection = ({ ngoId, onMatchCreated }: AvailableFoodSectionPro
       return;
     }
 
-    // Create a match
+    // Create a match with distance info
     const { error: matchError } = await supabase.from("matches").insert({
       food_listing_id: listing.id,
       ngo_id: ngoId,
-      match_score: 85, // Simplified score
+      match_score: 85,
       status: "pending",
+      distance_km: listing.distance || null,
     });
 
     if (matchError) {
@@ -92,75 +140,103 @@ const AvailableFoodSection = ({ ngoId, onMatchCreated }: AvailableFoodSectionPro
     return <p>Loading available food...</p>;
   }
 
+  if (!ngoLatitude || !ngoLongitude) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium">Location Required</h3>
+          <p className="text-muted-foreground">Please set your location in Settings to see nearby restaurants.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (availableFood.length === 0) {
     return (
       <Card>
         <CardContent className="py-8 text-center">
-          <p className="text-muted-foreground">No food available at the moment. Check back later!</p>
+          <p className="text-muted-foreground">No food available within {MAX_DISTANCE_KM}km. Check back later!</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {availableFood.map((food) => (
-        <Card key={food.id} className="overflow-hidden">
-          <CardHeader className="pb-2">
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-lg">{food.food_name}</CardTitle>
-              <Badge variant="outline" className="text-green-600 border-green-600">
-                Available
-              </Badge>
-            </div>
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span>{food.restaurants?.name}</span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {food.description && (
-              <p className="text-sm text-muted-foreground">{food.description}</p>
-            )}
-
-            <div className="flex items-center gap-2">
-              {food.category === "veg" ? (
-                <Leaf className="h-4 w-4 text-green-600" />
-              ) : food.category === "non_veg" ? (
-                <Drumstick className="h-4 w-4 text-red-600" />
-              ) : (
-                <div className="flex">
-                  <Leaf className="h-4 w-4 text-green-600" />
-                  <Drumstick className="h-4 w-4 text-red-600 -ml-1" />
-                </div>
-              )}
-              <span className="text-sm capitalize">{food.category.replace("_", "-")}</span>
-            </div>
-
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-1">
-                <Scale className="h-4 w-4 text-muted-foreground" />
-                <span>{food.quantity_kg} kg</span>
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Showing {availableFood.length} listing(s) within {MAX_DISTANCE_KM}km of your location
+      </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {availableFood.map((food) => (
+          <Card key={food.id} className="overflow-hidden">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <CardTitle className="text-lg">{food.food_name}</CardTitle>
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  Available
+                </Badge>
               </div>
-              {food.servings && (
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>{food.servings} servings</span>
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                <span>{food.restaurants?.name}</span>
+              </div>
+              {food.restaurants?.address && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {food.restaurants.address}
+                </p>
+              )}
+              {food.distance !== undefined && (
+                <div className="flex items-center gap-1 text-xs text-primary">
+                  <Navigation className="h-3 w-3" />
+                  <span>{food.distance.toFixed(1)} km away</span>
                 </div>
               )}
-            </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {food.description && (
+                <p className="text-sm text-muted-foreground">{food.description}</p>
+              )}
 
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>Expires: {format(new Date(food.expires_at), "MMM d, h:mm a")}</span>
-            </div>
+              <div className="flex items-center gap-2">
+                {food.category === "veg" ? (
+                  <Leaf className="h-4 w-4 text-green-600" />
+                ) : food.category === "non_veg" ? (
+                  <Drumstick className="h-4 w-4 text-red-600" />
+                ) : (
+                  <div className="flex">
+                    <Leaf className="h-4 w-4 text-green-600" />
+                    <Drumstick className="h-4 w-4 text-red-600 -ml-1" />
+                  </div>
+                )}
+                <span className="text-sm capitalize">{food.category.replace("_", "-")}</span>
+              </div>
 
-            <Button className="w-full" onClick={() => requestFood(food)}>
-              Request This Food
-            </Button>
-          </CardContent>
-        </Card>
-      ))}
+              <div className="flex items-center gap-4 text-sm">
+                <div className="flex items-center gap-1">
+                  <Scale className="h-4 w-4 text-muted-foreground" />
+                  <span>{food.quantity_kg} kg</span>
+                </div>
+                {food.servings && (
+                  <div className="flex items-center gap-1">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span>{food.servings} servings</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span>Expires: {format(new Date(food.expires_at), "MMM d, h:mm a")}</span>
+              </div>
+
+              <Button className="w-full" onClick={() => requestFood(food)}>
+                Request This Food
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };
