@@ -87,13 +87,13 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
       return;
     }
 
-    // Update food listing
+    // Delete the food listing after pickup is complete
     await supabase
       .from("food_listings")
-      .update({ status: "donated" })
+      .delete()
       .eq("id", match.food_listing_id);
 
-    toast.success("Delivery confirmed!");
+    toast.success("Delivery confirmed! Food listing removed.");
     fetchMatches();
   };
 
