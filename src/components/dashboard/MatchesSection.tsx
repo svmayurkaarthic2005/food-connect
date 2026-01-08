@@ -55,6 +55,45 @@ const MatchesSection = ({ restaurantId }: MatchesSectionProps) => {
     setLoading(false);
   };
 
+  const acceptMatch = async (match: MatchWithDetails) => {
+    const { error } = await supabase
+      .from("matches")
+      .update({ 
+        status: "accepted",
+        accepted_at: new Date().toISOString()
+      })
+      .eq("id", match.id);
+
+    if (error) {
+      toast.error("Failed to accept request");
+      return;
+    }
+
+    toast.success("Request accepted! NGO will come for pickup.");
+    fetchMatches();
+  };
+
+  const rejectMatch = async (match: MatchWithDetails) => {
+    const { error } = await supabase
+      .from("matches")
+      .update({ status: "cancelled" })
+      .eq("id", match.id);
+
+    if (error) {
+      toast.error("Failed to reject request");
+      return;
+    }
+
+    // Make food available again
+    await supabase
+      .from("food_listings")
+      .update({ status: "available" })
+      .eq("id", match.food_listing_id);
+
+    toast.success("Request rejected. Food is available again.");
+    fetchMatches();
+  };
+
   const confirmPickup = async (match: MatchWithDetails) => {
     const { error } = await supabase
       .from("matches")
@@ -69,13 +108,13 @@ const MatchesSection = ({ restaurantId }: MatchesSectionProps) => {
       return;
     }
 
-    // Update food listing
+    // Delete the food listing after pickup is complete
     await supabase
       .from("food_listings")
-      .update({ status: "donated" })
+      .delete()
       .eq("id", match.food_listing_id);
 
-    toast.success("Pickup confirmed!");
+    toast.success("Pickup confirmed! Food listing removed.");
     fetchMatches();
   };
 
@@ -118,6 +157,17 @@ const MatchesSection = ({ restaurantId }: MatchesSectionProps) => {
             <p className="text-sm text-muted-foreground">
               Requested: {format(new Date(match.created_at), "MMM d, h:mm a")}
             </p>
+
+            {match.status === "pending" && (
+              <div className="flex gap-2">
+                <Button onClick={() => acceptMatch(match)} className="flex-1">
+                  Accept Request
+                </Button>
+                <Button variant="outline" onClick={() => rejectMatch(match)}>
+                  Reject
+                </Button>
+              </div>
+            )}
 
             {match.status === "accepted" && (
               <Button onClick={() => confirmPickup(match)} className="w-full">

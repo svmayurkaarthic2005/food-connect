@@ -55,25 +55,7 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
     setLoading(false);
   };
 
-  const acceptMatch = async (match: MatchWithDetails) => {
-    const { error } = await supabase
-      .from("matches")
-      .update({ 
-        status: "accepted",
-        accepted_at: new Date().toISOString()
-      })
-      .eq("id", match.id);
-
-    if (error) {
-      toast.error("Failed to accept match");
-      return;
-    }
-
-    toast.success("Match accepted! Proceed to pickup.");
-    fetchMatches();
-  };
-
-  const confirmDelivery = async (match: MatchWithDetails) => {
+  const confirmPickup = async (match: MatchWithDetails) => {
     const { error } = await supabase
       .from("matches")
       .update({ 
@@ -83,7 +65,7 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
       .eq("id", match.id);
 
     if (error) {
-      toast.error("Failed to confirm delivery");
+      toast.error("Failed to confirm pickup");
       return;
     }
 
@@ -93,18 +75,18 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
       .delete()
       .eq("id", match.food_listing_id);
 
-    toast.success("Delivery confirmed! Food listing removed.");
+    toast.success("Pickup confirmed! Food listing removed.");
     fetchMatches();
   };
 
-  const cancelMatch = async (match: MatchWithDetails) => {
+  const cancelRequest = async (match: MatchWithDetails) => {
     const { error } = await supabase
       .from("matches")
       .update({ status: "cancelled" })
       .eq("id", match.id);
 
     if (error) {
-      toast.error("Failed to cancel match");
+      toast.error("Failed to cancel request");
       return;
     }
 
@@ -114,7 +96,7 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
       .update({ status: "available" })
       .eq("id", match.food_listing_id);
 
-    toast.success("Match cancelled");
+    toast.success("Request cancelled");
     fetchMatches();
   };
 
@@ -168,18 +150,16 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
             </p>
 
             {match.status === "pending" && (
-              <div className="flex gap-2">
-                <Button onClick={() => acceptMatch(match)} className="flex-1">
-                  Accept & Go Pickup
-                </Button>
-                <Button variant="outline" onClick={() => cancelMatch(match)}>
-                  Cancel
+              <div className="flex gap-2 items-center">
+                <p className="text-sm text-yellow-600 flex-1">Waiting for restaurant to accept...</p>
+                <Button variant="outline" size="sm" onClick={() => cancelRequest(match)}>
+                  Cancel Request
                 </Button>
               </div>
             )}
 
             {match.status === "accepted" && (
-              <Button onClick={() => confirmDelivery(match)} className="w-full">
+              <Button onClick={() => confirmPickup(match)} className="w-full">
                 Confirm Food Received
               </Button>
             )}
