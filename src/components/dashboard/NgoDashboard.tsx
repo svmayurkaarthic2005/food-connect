@@ -138,7 +138,8 @@ const NgoDashboard = ({ onSignOut }: NgoDashboardProps) => {
 
         <TabsContent value="available">
           <AvailableFoodSection 
-            ngoId={ngo?.id} 
+            ngoId={ngo?.id}
+            ngoName={ngo?.name || "Your NGO"}
             ngoLatitude={ngo?.latitude ?? null}
             ngoLongitude={ngo?.longitude ?? null}
             onMatchCreated={fetchNgoData} 

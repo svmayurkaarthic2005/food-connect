@@ -1,18 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Clock, Scale, Users, Leaf, Drumstick, MapPin, Navigation } from "lucide-react";
+import { Clock, Scale, Users, Leaf, Drumstick, MapPin, Navigation, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Database } from "@/integrations/supabase/types";
+import FoodMap from "./FoodMap";
 
 type FoodListing = Database["public"]["Tables"]["food_listings"]["Row"];
 type Restaurant = Database["public"]["Tables"]["restaurants"]["Row"];
 
 interface AvailableFoodSectionProps {
   ngoId: string | undefined;
+  ngoName: string;
   ngoLatitude: number | null;
   ngoLongitude: number | null;
   onMatchCreated: () => void;
@@ -38,9 +40,10 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 const MAX_DISTANCE_KM = 15;
 
-const AvailableFoodSection = ({ ngoId, ngoLatitude, ngoLongitude, onMatchCreated }: AvailableFoodSectionProps) => {
+const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMatchCreated }: AvailableFoodSectionProps) => {
   const [availableFood, setAvailableFood] = useState<FoodWithRestaurant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMap, setShowMap] = useState(true);
 
   useEffect(() => {
     fetchAvailableFood();
@@ -162,11 +165,58 @@ const AvailableFoodSection = ({ ngoId, ngoLatitude, ngoLongitude, onMatchCreated
     );
   }
 
+  // Extract unique restaurants with locations for the map
+  const restaurantsForMap = useMemo(() => {
+    const restaurantMap = new window.Map<string, { id: string; name: string; address?: string | null; latitude: number; longitude: number; foodCount: number }>();
+    
+    availableFood.forEach((food) => {
+      const r = food.restaurants;
+      if (r?.latitude && r?.longitude) {
+        const existing = restaurantMap.get(r.id);
+        if (existing) {
+          existing.foodCount += 1;
+        } else {
+          restaurantMap.set(r.id, {
+            id: r.id,
+            name: r.name,
+            address: r.address,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            foodCount: 1,
+          });
+        }
+      }
+    });
+    
+    return Array.from(restaurantMap.values());
+  }, [availableFood]);
+
   return (
     <div className="space-y-4">
-      <p className="text-sm text-muted-foreground">
-        Showing {availableFood.length} listing(s) within {MAX_DISTANCE_KM}km of your location
-      </p>
+      <div className="flex justify-between items-center">
+        <p className="text-sm text-muted-foreground">
+          Showing {availableFood.length} listing(s) within {MAX_DISTANCE_KM}km of your location
+        </p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => setShowMap(!showMap)}
+          className="gap-2"
+        >
+          <MapIcon className="h-4 w-4" />
+          {showMap ? "Hide Map" : "Show Map"}
+        </Button>
+      </div>
+
+      {showMap && ngoLatitude && ngoLongitude && (
+        <FoodMap
+          ngoName={ngoName}
+          ngoLatitude={ngoLatitude}
+          ngoLongitude={ngoLongitude}
+          restaurants={restaurantsForMap}
+        />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {availableFood.map((food) => (
           <Card key={food.id} className="overflow-hidden">
