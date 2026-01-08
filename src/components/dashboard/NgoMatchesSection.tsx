@@ -116,14 +116,14 @@ const NgoMatchesSection = ({ ngoId }: NgoMatchesSectionProps) => {
 
   return (
     <div className="space-y-4">
-      {matches.map((match) => (
+      {matches.filter(m => m.food_listings).map((match) => (
         <Card key={match.id}>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-lg">{match.food_listings.food_name}</CardTitle>
+                <CardTitle className="text-lg">{match.food_listings?.food_name}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  From: {match.food_listings.restaurants?.name}
+                  From: {match.food_listings?.restaurants?.name ?? "Unknown"}
                 </p>
               </div>
               <Badge className={statusColors[match.status]}>

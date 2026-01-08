@@ -134,14 +134,14 @@ const MatchesSection = ({ restaurantId }: MatchesSectionProps) => {
 
   return (
     <div className="space-y-4">
-      {matches.map((match) => (
+      {matches.filter(m => m.ngos && m.food_listings).map((match) => (
         <Card key={match.id}>
           <CardHeader className="pb-2">
             <div className="flex justify-between items-start">
               <div>
-                <CardTitle className="text-lg">{match.food_listings.food_name}</CardTitle>
+                <CardTitle className="text-lg">{match.food_listings?.food_name}</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Requested by: {match.ngos.name}
+                  Requested by: {match.ngos?.name}
                 </p>
               </div>
               <Badge className={statusColors[match.status]}>
@@ -151,7 +151,7 @@ const MatchesSection = ({ restaurantId }: MatchesSectionProps) => {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Quantity: {match.food_listings.quantity_kg} kg</span>
+              <span>Quantity: {match.food_listings?.quantity_kg} kg</span>
               <span>Match Score: {match.match_score}%</span>
             </div>
             <p className="text-sm text-muted-foreground">
