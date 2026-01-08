@@ -139,23 +139,7 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
     fetchAvailableFood();
   };
 
-  if (loading) {
-    return <p>Loading available food...</p>;
-  }
-
-  if (!ngoLatitude || !ngoLongitude) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium">Location Required</h3>
-          <p className="text-muted-foreground">Please set your location in Settings to see nearby restaurants.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Extract unique restaurants with locations for the map
+  // Extract unique restaurants with locations for the map - MUST be before conditional returns
   type RestaurantMapItem = { id: string; name: string; address?: string | null; latitude: number; longitude: number; foodCount: number };
   
   const restaurantsForMap = useMemo((): RestaurantMapItem[] => {
@@ -182,6 +166,22 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
     
     return Object.values(restaurantMap);
   }, [availableFood]);
+
+  if (loading) {
+    return <p>Loading available food...</p>;
+  }
+
+  if (!ngoLatitude || !ngoLongitude) {
+    return (
+      <Card>
+        <CardContent className="py-8 text-center">
+          <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-medium">Location Required</h3>
+          <p className="text-muted-foreground">Please set your location in Settings to see nearby restaurants.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (availableFood.length === 0) {
     return (
