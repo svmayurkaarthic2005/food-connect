@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Package, Handshake, TrendingUp } from "lucide-react";
+import { Plus, LogOut, Package, Handshake, TrendingUp, Settings } from "lucide-react";
 import AddFoodDialog from "./AddFoodDialog";
 import FoodListingCard from "./FoodListingCard";
 import MatchesSection from "./MatchesSection";
 import ImpactStats from "./ImpactStats";
+import SettingsSection from "./SettingsSection";
 import { Database } from "@/integrations/supabase/types";
 
 type FoodListing = Database["public"]["Tables"]["food_listings"]["Row"];
@@ -131,6 +132,7 @@ const RestaurantDashboard = ({ onSignOut }: RestaurantDashboardProps) => {
           <TabsTrigger value="listings">My Listings</TabsTrigger>
           <TabsTrigger value="matches">Matches</TabsTrigger>
           <TabsTrigger value="impact">Impact</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="listings" className="space-y-4">
@@ -166,6 +168,25 @@ const RestaurantDashboard = ({ onSignOut }: RestaurantDashboardProps) => {
 
         <TabsContent value="impact">
           <ImpactStats />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          {restaurant && (
+            <SettingsSection
+              type="restaurant"
+              data={{
+                id: restaurant.id,
+                name: restaurant.name,
+                description: restaurant.description,
+                address: restaurant.address,
+                latitude: restaurant.latitude,
+                longitude: restaurant.longitude,
+                cuisine_type: restaurant.cuisine_type,
+                operating_hours: restaurant.operating_hours
+              }}
+              onUpdate={fetchRestaurantData}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

@@ -228,9 +228,12 @@ export type Database = {
       }
       ngos: {
         Row: {
+          address: string | null
           created_at: string
           description: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
           people_served: number | null
           total_meals_received: number | null
@@ -240,9 +243,12 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
           people_served?: number | null
           total_meals_received?: number | null
@@ -252,9 +258,12 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
           description?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           people_served?: number | null
           total_meals_received?: number | null
@@ -347,10 +356,13 @@ export type Database = {
       }
       restaurants: {
         Row: {
+          address: string | null
           created_at: string
           cuisine_type: string | null
           description: string | null
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
           operating_hours: string | null
           total_donations: number | null
@@ -361,10 +373,13 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          address?: string | null
           created_at?: string
           cuisine_type?: string | null
           description?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
           operating_hours?: string | null
           total_donations?: number | null
@@ -375,10 +390,13 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          address?: string | null
           created_at?: string
           cuisine_type?: string | null
           description?: string | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           operating_hours?: string | null
           total_donations?: number | null
