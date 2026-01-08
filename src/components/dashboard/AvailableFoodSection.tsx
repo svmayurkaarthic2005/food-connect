@@ -166,29 +166,31 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
   }
 
   // Extract unique restaurants with locations for the map
-  const restaurantsForMap = useMemo(() => {
-    const restaurantMap = new window.Map<string, { id: string; name: string; address?: string | null; latitude: number; longitude: number; foodCount: number }>();
+  type RestaurantMapItem = { id: string; name: string; address?: string | null; latitude: number; longitude: number; foodCount: number };
+  
+  const restaurantsForMap = useMemo((): RestaurantMapItem[] => {
+    const restaurantMap: Record<string, RestaurantMapItem> = {};
     
     availableFood.forEach((food) => {
       const r = food.restaurants;
       if (r?.latitude && r?.longitude) {
-        const existing = restaurantMap.get(r.id);
+        const existing = restaurantMap[r.id];
         if (existing) {
           existing.foodCount += 1;
         } else {
-          restaurantMap.set(r.id, {
+          restaurantMap[r.id] = {
             id: r.id,
             name: r.name,
             address: r.address,
             latitude: r.latitude,
             longitude: r.longitude,
             foodCount: 1,
-          });
+          };
         }
       }
     });
     
-    return Array.from(restaurantMap.values());
+    return Object.values(restaurantMap);
   }, [availableFood]);
 
   return (
