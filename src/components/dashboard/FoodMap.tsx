@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -58,6 +58,12 @@ const FitBounds = ({ bounds }: { bounds: L.LatLngBoundsExpression }) => {
 };
 
 const FoodMap = ({ ngoName, ngoLatitude, ngoLongitude, restaurants }: FoodMapProps) => {
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Calculate bounds to fit all markers
   const allPoints: [number, number][] = [
     [ngoLatitude, ngoLongitude],
@@ -65,6 +71,15 @@ const FoodMap = ({ ngoName, ngoLatitude, ngoLongitude, restaurants }: FoodMapPro
   ];
   
   const bounds = L.latLngBounds(allPoints);
+
+  // Only render map on client-side to avoid SSR/hydration issues
+  if (!isClient) {
+    return (
+      <div className="h-[400px] w-full rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
