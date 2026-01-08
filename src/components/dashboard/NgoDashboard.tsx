@@ -4,12 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, LogOut, Package, Users, Heart } from "lucide-react";
+import { Plus, LogOut, Package, Users, Heart, Settings } from "lucide-react";
 import AddRequestDialog from "./AddRequestDialog";
 import FoodRequestCard from "./FoodRequestCard";
 import AvailableFoodSection from "./AvailableFoodSection";
 import NgoMatchesSection from "./NgoMatchesSection";
 import ImpactStats from "./ImpactStats";
+import SettingsSection from "./SettingsSection";
 import { Database } from "@/integrations/supabase/types";
 
 type FoodRequest = Database["public"]["Tables"]["food_requests"]["Row"];
@@ -132,6 +133,7 @@ const NgoDashboard = ({ onSignOut }: NgoDashboardProps) => {
           <TabsTrigger value="requests">My Requests</TabsTrigger>
           <TabsTrigger value="matches">My Matches</TabsTrigger>
           <TabsTrigger value="impact">Impact</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="available">
@@ -171,6 +173,23 @@ const NgoDashboard = ({ onSignOut }: NgoDashboardProps) => {
 
         <TabsContent value="impact">
           <ImpactStats />
+        </TabsContent>
+
+        <TabsContent value="settings">
+          {ngo && (
+            <SettingsSection
+              type="ngo"
+              data={{
+                id: ngo.id,
+                name: ngo.name,
+                description: ngo.description,
+                address: ngo.address,
+                latitude: ngo.latitude,
+                longitude: ngo.longitude
+              }}
+              onUpdate={fetchNgoData}
+            />
+          )}
         </TabsContent>
       </Tabs>
 

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Utensils, Heart } from "lucide-react";
+import { Utensils, Heart, MapPin, Loader2 } from "lucide-react";
 
 type UserRole = "restaurant" | "ngo";
 
@@ -17,8 +17,43 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [address, setAddress] = useState("");
   const [role, setRole] = useState<UserRole>("restaurant");
   const [loading, setLoading] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported");
+      return;
+    }
+    setGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLatitude(lat);
+        setLongitude(lng);
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          );
+          const data = await response.json();
+          setAddress(data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        } catch {
+          setAddress(`${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+        }
+        setGettingLocation(false);
+        toast.success("Location detected");
+      },
+      () => {
+        setGettingLocation(false);
+        toast.error("Failed to get location");
+      }
+    );
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,16 +87,28 @@ const Auth = () => {
 
           if (roleError) throw roleError;
 
-          // Create restaurant or NGO profile
+          // Create restaurant or NGO profile with location
           if (role === "restaurant") {
             const { error: restError } = await supabase
               .from("restaurants")
-              .insert({ user_id: data.user.id, name });
+              .insert({ 
+                user_id: data.user.id, 
+                name,
+                address: address || null,
+                latitude,
+                longitude
+              });
             if (restError) throw restError;
           } else {
             const { error: ngoError } = await supabase
               .from("ngos")
-              .insert({ user_id: data.user.id, name });
+              .insert({ 
+                user_id: data.user.id, 
+                name,
+                address: address || null,
+                latitude,
+                longitude
+              });
             if (ngoError) throw ngoError;
           }
 
@@ -102,6 +149,37 @@ const Auth = () => {
                     placeholder="Enter your organization name"
                     required
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="address">Address</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="address"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Enter your address"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={getCurrentLocation}
+                      disabled={gettingLocation}
+                      title="Use current location"
+                    >
+                      {gettingLocation ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MapPin className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {latitude && longitude && (
+                    <p className="text-xs text-muted-foreground">
+                      📍 {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-3">
                   <Label>I am a</Label>
