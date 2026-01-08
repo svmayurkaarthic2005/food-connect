@@ -213,7 +213,7 @@ const Auth = () => {
                   </div>
                   <div className="space-y-3">
                     <Label>I am a</Label>
-                    <RadioGroup value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                    <RadioGroup value={role} onValueChange={(v) => setRole(v as UserRole)} aria-label="Select your role">
                       <label 
                         htmlFor="restaurant"
                         className={`flex items-center space-x-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
