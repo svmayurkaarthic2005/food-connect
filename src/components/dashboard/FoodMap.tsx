@@ -1,12 +1,7 @@
-import { useEffect, useState, useMemo, lazy, Suspense } from "react";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-// Lazy load the react-leaflet components to avoid SSR issues
-const MapContainer = lazy(() => import("react-leaflet").then(mod => ({ default: mod.MapContainer })));
-const TileLayer = lazy(() => import("react-leaflet").then(mod => ({ default: mod.TileLayer })));
-const Marker = lazy(() => import("react-leaflet").then(mod => ({ default: mod.Marker })));
-const Popup = lazy(() => import("react-leaflet").then(mod => ({ default: mod.Popup })));
 
 // Fix for default marker icons in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -51,86 +46,78 @@ interface FoodMapProps {
   restaurants: Restaurant[];
 }
 
-const LoadingFallback = () => (
-  <div className="h-[400px] w-full rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
-    <p className="text-muted-foreground">Loading map...</p>
-  </div>
-);
+// Component to fit bounds when markers change
+const FitBounds = ({ bounds }: { bounds: L.LatLngBoundsExpression }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (bounds) {
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [map, bounds]);
+  return null;
+};
 
 const FoodMap = ({ ngoName, ngoLatitude, ngoLongitude, restaurants }: FoodMapProps) => {
-  const [isClient, setIsClient] = useState(false);
-  const [hasError, setHasError] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return <LoadingFallback />;
-  }
-
-  if (hasError) {
-    return (
-      <div className="h-[400px] w-full rounded-lg overflow-hidden border bg-muted flex flex-col items-center justify-center gap-2">
-        <p className="text-muted-foreground">Unable to load map</p>
-        <button 
-          onClick={() => setHasError(false)} 
-          className="text-sm text-primary underline"
-        >
-          Try again
-        </button>
-      </div>
-    );
-  }
+  // Calculate bounds to fit all markers
+  const allPoints: [number, number][] = [
+    [ngoLatitude, ngoLongitude],
+    ...restaurants.map((r) => [r.latitude, r.longitude] as [number, number]),
+  ];
+  
+  const bounds = L.latLngBounds(allPoints);
 
   return (
     <div className="space-y-2">
       <div className="h-[400px] w-full rounded-lg overflow-hidden border">
-        <Suspense fallback={<LoadingFallback />}>
-          <MapContainer
-            center={[ngoLatitude, ngoLongitude]}
-            zoom={12}
-            style={{ height: "100%", width: "100%" }}
-            scrollWheelZoom={true}
-          >
-            <Suspense fallback={null}>
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Marker position={[ngoLatitude, ngoLongitude]} icon={ngoIcon}>
-                <Popup>
-                  <div className="text-center">
-                    <strong className="text-primary">{ngoName}</strong>
-                    <p className="text-xs text-muted-foreground">Your Location (NGO)</p>
-                  </div>
-                </Popup>
-              </Marker>
-              {restaurants.map((restaurant) => (
-                <Marker
-                  key={restaurant.id}
-                  position={[restaurant.latitude, restaurant.longitude]}
-                  icon={restaurantIcon}
-                >
-                  <Popup>
-                    <div>
-                      <strong className="text-destructive">{restaurant.name}</strong>
-                      {restaurant.address && (
-                        <p className="text-xs">{restaurant.address}</p>
-                      )}
-                      {restaurant.foodCount !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          {restaurant.foodCount} item(s) available
-                        </p>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </Suspense>
-          </MapContainer>
-        </Suspense>
+        <MapContainer
+          center={[ngoLatitude, ngoLongitude]}
+          zoom={12}
+          style={{ height: "100%", width: "100%" }}
+          scrollWheelZoom={true}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          
+          {restaurants.length > 0 && <FitBounds bounds={bounds} />}
+          
+          {/* NGO Marker */}
+          <Marker position={[ngoLatitude, ngoLongitude]} icon={ngoIcon}>
+            <Popup>
+              <div className="text-center">
+                <strong className="text-primary">{ngoName}</strong>
+                <p className="text-xs text-muted-foreground">Your Location (NGO)</p>
+              </div>
+            </Popup>
+          </Marker>
+
+          {/* Restaurant Markers */}
+          {restaurants.map((restaurant) => (
+            <Marker
+              key={restaurant.id}
+              position={[restaurant.latitude, restaurant.longitude]}
+              icon={restaurantIcon}
+            >
+              <Popup>
+                <div>
+                  <strong className="text-destructive">{restaurant.name}</strong>
+                  {restaurant.address && (
+                    <p className="text-xs">{restaurant.address}</p>
+                  )}
+                  {restaurant.foodCount !== undefined && (
+                    <p className="text-xs text-muted-foreground">
+                      {restaurant.foodCount} item(s) available
+                    </p>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
       </div>
+      
+      {/* Legend */}
       <div className="flex gap-4 text-sm">
         <div className="flex items-center gap-1">
           <div className="w-3 h-3 rounded-full bg-blue-500" />
