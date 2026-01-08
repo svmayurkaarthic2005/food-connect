@@ -139,7 +139,8 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
     fetchAvailableFood();
   };
 
-  // Extract unique restaurants with locations for the map - MUST be before conditional returns
+  // Extract unique restaurants with locations for the map
+  // All hooks must be called before any conditional returns to satisfy Rules of Hooks
   type RestaurantMapItem = { id: string; name: string; address?: string | null; latitude: number; longitude: number; foodCount: number };
   
   const restaurantsForMap = useMemo((): RestaurantMapItem[] => {
