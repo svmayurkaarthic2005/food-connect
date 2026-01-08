@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Utensils, Heart, MapPin, Loader2 } from "lucide-react";
+import { Utensils, Heart, MapPin, Loader2, ArrowLeft } from "lucide-react";
 
 type UserRole = "restaurant" | "ngo";
 
@@ -80,14 +80,12 @@ const Auth = () => {
         if (error) throw error;
 
         if (data.user) {
-          // Add user role
           const { error: roleError } = await supabase
             .from("user_roles")
             .insert({ user_id: data.user.id, role });
 
           if (roleError) throw roleError;
 
-          // Create restaurant or NGO profile with location
           if (role === "restaurant") {
             const { error: restError } = await supabase
               .from("restaurants")
@@ -124,122 +122,171 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-orange-50 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center gap-2 mb-4">
-            <Utensils className="h-8 w-8 text-orange-500" />
-            <Heart className="h-8 w-8 text-green-500" />
-          </div>
-          <CardTitle className="text-2xl">Urban Food Router</CardTitle>
-          <CardDescription>
-            {isLogin ? "Sign in to your account" : "Create a new account"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAuth} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Organization Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your organization name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
-                  <div className="flex gap-2">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-accent via-background to-secondary/5">
+      {/* Header */}
+      <div className="p-4">
+        <Link to="/" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
+      {/* Form Container */}
+      <div className="flex-1 flex items-center justify-center p-4 pb-8">
+        <Card className="w-full max-w-md shadow-xl border-0">
+          <CardHeader className="text-center pb-4">
+            <div className="flex justify-center gap-2 mb-4">
+              <div className="p-2 bg-secondary/10 rounded-xl">
+                <Utensils className="h-6 w-6 text-secondary" />
+              </div>
+              <div className="p-2 bg-primary/10 rounded-xl">
+                <Heart className="h-6 w-6 text-primary" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl">
+              {isLogin ? "Welcome Back" : "Create Account"}
+            </CardTitle>
+            <CardDescription>
+              {isLogin ? "Sign in to your account to continue" : "Join our community to fight food waste"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAuth} className="space-y-4">
+              {!isLogin && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Organization Name</Label>
                     <Input
-                      id="address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Enter your address"
-                      className="flex-1"
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Enter your organization name"
+                      required
+                      className="h-11"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={getCurrentLocation}
-                      disabled={gettingLocation}
-                      title="Use current location"
-                    >
-                      {gettingLocation ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <MapPin className="h-4 w-4" />
-                      )}
-                    </Button>
                   </div>
-                  {latitude && longitude && (
-                    <p className="text-xs text-muted-foreground">
-                      📍 {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-3">
-                  <Label>I am a</Label>
-                  <RadioGroup value={role} onValueChange={(v) => setRole(v as UserRole)}>
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                      <RadioGroupItem value="restaurant" id="restaurant" />
-                      <Label htmlFor="restaurant" className="flex items-center gap-2 cursor-pointer">
-                        <Utensils className="h-4 w-4 text-orange-500" />
-                        Restaurant (Donate surplus food)
-                      </Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="address"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="Enter your address"
+                        className="flex-1 h-11"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-11 w-11 shrink-0"
+                        onClick={getCurrentLocation}
+                        disabled={gettingLocation}
+                        title="Use current location"
+                      >
+                        {gettingLocation ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <MapPin className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
-                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                      <RadioGroupItem value="ngo" id="ngo" />
-                      <Label htmlFor="ngo" className="flex items-center gap-2 cursor-pointer">
-                        <Heart className="h-4 w-4 text-green-500" />
-                        NGO / Shelter (Receive food)
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              </>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                required
-              />
+                    {latitude && longitude && (
+                      <p className="text-xs text-primary flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-3">
+                    <Label>I am a</Label>
+                    <RadioGroup value={role} onValueChange={(v) => setRole(v as UserRole)}>
+                      <label 
+                        htmlFor="restaurant"
+                        className={`flex items-center space-x-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          role === "restaurant" 
+                            ? "border-secondary bg-secondary/5" 
+                            : "border-border hover:border-secondary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <RadioGroupItem value="restaurant" id="restaurant" className="sr-only" />
+                        <div className={`p-2 rounded-lg ${role === "restaurant" ? "bg-secondary/20" : "bg-muted"}`}>
+                          <Utensils className={`h-5 w-5 ${role === "restaurant" ? "text-secondary" : "text-muted-foreground"}`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium">Restaurant</div>
+                          <div className="text-sm text-muted-foreground">Donate surplus food</div>
+                        </div>
+                      </label>
+                      <label 
+                        htmlFor="ngo"
+                        className={`flex items-center space-x-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                          role === "ngo" 
+                            ? "border-primary bg-primary/5" 
+                            : "border-border hover:border-primary/50 hover:bg-muted/50"
+                        }`}
+                      >
+                        <RadioGroupItem value="ngo" id="ngo" className="sr-only" />
+                        <div className={`p-2 rounded-lg ${role === "ngo" ? "bg-primary/20" : "bg-muted"}`}>
+                          <Heart className={`h-5 w-5 ${role === "ngo" ? "text-primary" : "text-muted-foreground"}`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium">NGO / Shelter</div>
+                          <div className="text-sm text-muted-foreground">Receive food donations</div>
+                        </div>
+                      </label>
+                    </RadioGroup>
+                  </div>
+                </>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                  minLength={6}
+                  className="h-11"
+                />
+              </div>
+              <Button type="submit" className="w-full h-11 text-base" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    {isLogin ? "Signing in..." : "Creating account..."}
+                  </>
+                ) : (
+                  isLogin ? "Sign In" : "Create Account"
+                )}
+              </Button>
+            </form>
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-primary hover:underline font-medium"
+              >
+                {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
+              </button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-                minLength={6}
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : isLogin ? "Sign In" : "Create Account"}
-            </Button>
-          </form>
-          <div className="mt-4 text-center text-sm">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-primary hover:underline"
-            >
-              {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
