@@ -17,6 +17,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [role, setRole] = useState<UserRole>("restaurant");
   const [loading, setLoading] = useState(false);
@@ -74,7 +75,7 @@ const Auth = () => {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
-            data: { name },
+            data: { name, phone },
           },
         });
         if (error) throw error;
@@ -161,6 +162,18 @@ const Auth = () => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Enter your organization name"
+                      required
+                      className="h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Mobile Number</Label>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Enter your mobile number"
                       required
                       className="h-11"
                     />
