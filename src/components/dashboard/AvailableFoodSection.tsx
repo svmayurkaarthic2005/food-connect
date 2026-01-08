@@ -7,7 +7,8 @@ import { format } from "date-fns";
 import { Clock, Scale, Users, Leaf, Drumstick, MapPin, Navigation, Map as MapIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Database } from "@/integrations/supabase/types";
-import FoodMap from "./FoodMap";
+// Temporarily disabled due to react-leaflet compatibility issue
+// import FoodMap from "./FoodMap";
 
 type FoodListing = Database["public"]["Tables"]["food_listings"]["Row"];
 type Restaurant = Database["public"]["Tables"]["restaurants"]["Row"];
@@ -203,12 +204,9 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
         </div>
 
         {showMap && ngoLatitude && ngoLongitude && (
-          <FoodMap
-            ngoName={ngoName}
-            ngoLatitude={ngoLatitude}
-            ngoLongitude={ngoLongitude}
-            restaurants={[]}
-          />
+          <div className="h-[300px] w-full rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+            <p className="text-muted-foreground">Map temporarily disabled</p>
+          </div>
         )}
 
         <Card>
@@ -238,12 +236,9 @@ const AvailableFoodSection = ({ ngoId, ngoName, ngoLatitude, ngoLongitude, onMat
       </div>
 
       {showMap && ngoLatitude && ngoLongitude && (
-        <FoodMap
-          ngoName={ngoName}
-          ngoLatitude={ngoLatitude}
-          ngoLongitude={ngoLongitude}
-          restaurants={restaurantsForMap}
-        />
+        <div className="h-[300px] w-full rounded-lg overflow-hidden border bg-muted flex items-center justify-center">
+          <p className="text-muted-foreground">Map temporarily disabled</p>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
